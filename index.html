@@ -8,7 +8,7 @@
 	<meta name="author" content="徐无鬼">
 
 	
-	<meta name="description" content="徐无鬼因女商的介绍，去见魏武侯。武侯慰问他说:“先生气色不太好啊！大概是住在山林太吃苦了，所以下山来找人聊天吧？” “我是来慰问你的啊，怎么你还反过来慰问我呢？你呀，要么纵欲，徒增许多喜恶，内心却愈发空虚。要么就禁欲，远离那些喜恶，似乎又觉得生活没有滋味了，是不是这样呢！“ 武侯听了有点小失落， &hellip;">
+	<meta name="description" content="我们都知道，语言有编译时(compile time)和运行时(runtime)这两个时态。Java本是编译控，对运行时的自己不甚了解。不过在1.5之后(现在都8.0了，真是日往昔峥嵘岁月…)，Java引入了反射的概念，使其可以在运行时看到自己的类啊、接口啊、属性啊、 &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -73,6 +73,537 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/2013/04/30/java-reflection-tutorial-1/">
+		
+			Java Reflection Tutorial (1)</a>
+	</h2>
+	<div class="entry-content">
+		<p>我们都知道，语言有编译时(compile time)和运行时(runtime)这两个时态。Java本是编译控，对运行时的自己不甚了解。不过在1.5之后(现在都8.0了，真是日往昔峥嵘岁月…)，Java引入了反射的概念，使其可以在运行时看到自己的类啊、接口啊、属性啊、方法啊等等这一系列本来只有在编译时才能看到的伙计。虽然没有动态语言可以动态生成类那么灵活，但也极大了弥补了运行时无能的缺点。</p>
+
+<p>下面我们用一些Test Case来解释一下反射能够做些什么，熟悉下Java给我们提供的这些反射相关的接口。</p>
+
+<p>我们的示例为方便展示，采用的是JUnit的测试框架。关于JUnit可以参考<a href="https://github.com/junit-team/junit/wiki/Getting-started">Junit Tutorial</a>。还用到了辅助测试的类Mockito，关于Mockito可以参考 <a href="http://docs.mockito.googlecode.com/hg/latest/org/mockito/Mockito.html">How to Drink Mockito</a>。</p>
+
+<h1>1. 准备实验台</h1>
+
+<p>先抓几只我们做实验的小白鼠，也就是建几个用来测试反射的类。本期是动物园主题，就选企鹅吧。</p>
+
+<figure class='code'><figcaption><span>Penguin.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Penguin</span> <span class="kd">extends</span> <span class="n">Bird</span> <span class="kd">implements</span> <span class="n">Swim</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Color</span> <span class="n">color</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">Penguin</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">color</span> <span class="o">=</span> <span class="n">Color</span><span class="o">.</span><span class="na">BLACK</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">Penguin</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">Penguin</span><span class="o">(</span><span class="n">Color</span> <span class="n">color</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">color</span> <span class="o">=</span> <span class="n">color</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Color</span> <span class="nf">getColor</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">color</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setColor</span><span class="o">(</span><span class="n">Color</span> <span class="n">color</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">color</span> <span class="o">=</span> <span class="n">color</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getName</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setName</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">swim</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;I like swim!&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">shout</span><span class="o">(</span><span class="kt">int</span> <span class="n">times</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">StringBuilder</span> <span class="n">sb</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">();</span>
+</span><span class='line'>        <span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">times</span><span class="o">;</span><span class="n">i</span><span class="o">++){</span>
+</span><span class='line'>            <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="s">&quot;yell..&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">sb</span><span class="o">.</span><span class="na">toString</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>很明显，企鹅是鸟，勉强给他两个属性，名字和颜色。为什么名字是个public的属性，一会解释。<br/>
+鸟是个种类的概念，不应该有实例，所以让它成个抽象类。让它实现个&#8221;喳喳叫&#8221;的接口，还没想到什么鸟不能叫(死鸟不算..)</p>
+
+<figure class='code'><figcaption><span>Bird.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">Bird</span> <span class="kd">implements</span> <span class="n">Shout</span> <span class="o">{</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>企鹅这种鸟比较牛叉，可以游泳，就让它实现个Swim的接口。</p>
+
+<figure class='code'><figcaption><span>Swim.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Swim</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kt">void</span> <span class="nf">swim</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>企鹅的颜色也有很多种(其实我就知道黑白相间的…)，我们选用一个Enum来表示。</p>
+
+<figure class='code'><figcaption><span>Color.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">enum</span> <span class="n">Color</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">RED</span><span class="o">,</span><span class="n">GREEN</span><span class="o">,</span><span class="n">BLACK</span><span class="o">,</span><span class="n">WHITE</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>好了，小白鼠都上实验板了，该动刀了(怎么好像有点血腥…)</p>
+
+<p>我们创建一个Zoo类，把企鹅&#8221;请&#8221;到Zoo里。</p>
+
+<figure class='code'><figcaption><span>Zoo.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Zoo</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Class</span> <span class="n">penguinClass</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Class</span> <span class="n">birdClass</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Before</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setUp</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">//编译期</span>
+</span><span class='line'>        <span class="n">penguinClass</span> <span class="o">=</span> <span class="n">Penguin</span><span class="o">.</span><span class="na">class</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">birdClass</span> <span class="o">=</span> <span class="n">Bird</span><span class="o">.</span><span class="na">class</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果我们在编译前就知道类名是什么，那么就不用麻烦运行时(runtime)了，可以直接取到相应的类型。<br/>
+这位客官说了，要是编译器我们不知道呢？且看下面分解。</p>
+
+<h1>2. 实验</h1>
+
+<p>我们先看下怎么操作类里面的这各种的声明的属性。</p>
+
+<h3>获取类</h3>
+
+<p>刚说了编译时获取Class的方法，那运行时呢？在运行时可以根据类名来获取Class的实例。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_get_class_and_className</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">ClassNotFoundException</span> <span class="o">{</span>
+</span><span class='line'>    <span class="c1">//runtime</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">penguinClassName</span> <span class="o">=</span> <span class="s">&quot;com.thoughtworks.wugui.Penguin&quot;</span><span class="o">;</span>
+</span><span class='line'>    <span class="n">Class</span> <span class="n">clazz</span> <span class="o">=</span> <span class="n">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="n">penguinClassName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertSame</span><span class="o">(</span><span class="n">clazz</span><span class="o">,</span> <span class="n">penguinClass</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">clazz</span><span class="o">.</span><span class="na">getSimpleName</span><span class="o">(),</span> <span class="n">is</span><span class="o">(</span><span class="s">&quot;Penguin&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以使用forName函数，注意要加上包名。<br/>
+在得到类型后，就可以取得这种类型很多相关的信息，比如说修饰符、包、超类、继承的接口等等。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_get_modifiers</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">modifier</span> <span class="o">=</span> <span class="n">birdClass</span><span class="o">.</span><span class="na">getModifiers</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">assertTrue</span><span class="o">(</span><span class="n">Modifier</span><span class="o">.</span><span class="na">isAbstract</span><span class="o">(</span><span class="n">modifier</span><span class="o">));</span>
+</span><span class='line'>    <span class="n">assertTrue</span><span class="o">(</span><span class="n">Modifier</span><span class="o">.</span><span class="na">isPublic</span><span class="o">(</span><span class="n">modifier</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_get_package</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">modifier</span> <span class="o">=</span> <span class="n">birdClass</span><span class="o">.</span><span class="na">getModifiers</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">birdClass</span><span class="o">.</span><span class="na">getPackage</span><span class="o">().</span><span class="na">getName</span><span class="o">(),</span> <span class="n">is</span><span class="o">(</span><span class="s">&quot;com.thoughtworks.wugui&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_get_superclass</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">assertSame</span><span class="o">(</span><span class="n">penguinClass</span><span class="o">.</span><span class="na">getSuperclass</span><span class="o">(),</span> <span class="n">birdClass</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_get_interfaces</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Class</span><span class="o">[]</span> <span class="n">interfaces</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getInterfaces</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">interfaces</span><span class="o">.</span><span class="na">length</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+</span><span class='line'>    <span class="n">assertSame</span><span class="o">(</span><span class="n">interfaces</span><span class="o">[</span><span class="mi">0</span><span class="o">],</span> <span class="n">Swim</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>    <span class="c1">//Actually penguin implement two interfaces, swim and shout. So the getInterface method</span>
+</span><span class='line'>    <span class="c1">//just return declared interfaces above the class</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>构造函数</h3>
+
+<p>拿到<code>Penguin.class</code>这个类型后，我们当然想要构造一个它的实例来使用。如果仅仅使用默认构造函数，可以简单使用<code>Penguin.clsss.newInstance()</code>(如果没有默认构造函数会抛<code>InstantiationException</code>)。如果要使用自定的构造函数，以及获取构造函数中的参数类型，可以看下下面的例子。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_get_constructors</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Constructor</span><span class="o">[]</span> <span class="n">constructors</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getConstructors</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">constructors</span><span class="o">.</span><span class="na">length</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="mi">2</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">get_constructor_through_parameters</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Constructor</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getConstructor</span><span class="o">(</span><span class="k">new</span> <span class="n">Class</span><span class="o">[]{</span><span class="n">Color</span><span class="o">.</span><span class="na">class</span><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">constructor</span><span class="o">,</span> <span class="n">notNullValue</span><span class="o">());</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">get_parameters_from_constructor</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">NoSuchMethodException</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Constructor</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getConstructor</span><span class="o">(</span><span class="k">new</span> <span class="n">Class</span><span class="o">[]{</span><span class="n">Color</span><span class="o">.</span><span class="na">class</span><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Class</span><span class="o">[]</span> <span class="n">parameterTypes</span> <span class="o">=</span> <span class="n">constructor</span><span class="o">.</span><span class="na">getParameterTypes</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertSame</span><span class="o">(</span><span class="n">parameterTypes</span><span class="o">[</span><span class="mi">0</span><span class="o">],</span> <span class="n">Color</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">create_instance_using_constructor</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Constructor</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getConstructor</span><span class="o">(</span><span class="k">new</span> <span class="n">Class</span><span class="o">[]{</span><span class="n">Color</span><span class="o">.</span><span class="na">class</span><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Penguin</span> <span class="n">penguin</span> <span class="o">=</span> <span class="o">(</span><span class="n">Penguin</span><span class="o">)</span> <span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="n">Color</span><span class="o">.</span><span class="na">WHITE</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">penguin</span><span class="o">.</span><span class="na">getColor</span><span class="o">(),</span> <span class="n">is</span><span class="o">(</span><span class="n">Color</span><span class="o">.</span><span class="na">WHITE</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>实例变量</h3>
+
+<p>看到Penguin的name是public的，可能大家都比较好奇。因为一般来说我们会使用访问器方法get、set来访问private的实例变量。但getField只能取到public的实例变量，所以用的会比较少。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_get_fields_from_class</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">NoSuchFieldException</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Field</span><span class="o">[]</span> <span class="n">fields</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getFields</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">fields</span><span class="o">.</span><span class="na">length</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Field</span> <span class="n">name</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getField</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">name</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span> <span class="n">is</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertSame</span><span class="o">(</span><span class="n">name</span><span class="o">.</span><span class="na">getType</span><span class="o">(),</span> <span class="n">String</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">get_and_set_field_value</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Field</span> <span class="n">name</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getField</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">Penguin</span> <span class="n">penguin</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Penguin</span><span class="o">(</span><span class="s">&quot;emperor penguin&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">((</span><span class="n">String</span><span class="o">)</span> <span class="n">name</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">penguin</span><span class="o">),</span> <span class="n">is</span><span class="o">(</span><span class="s">&quot;emperor penguin&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">name</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">penguin</span><span class="o">,</span> <span class="s">&quot;fairy penguin&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">penguin</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span> <span class="n">is</span><span class="o">(</span><span class="s">&quot;fairy penguin&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>方法</h3>
+
+<p>当然还有最重要的方法。方法的获取比较像构造函数，可以使用方法名和参数类型表来获取。方法的调用则是制定所要调用方法的对象和参数列表即可。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">get_and_methods_from_class</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">NoSuchMethodException</span> <span class="o">{</span>
+</span><span class='line'>    <span class="c1">//The Method[] array will have one Method instance for each public method declared in the class.</span>
+</span><span class='line'>    <span class="n">Method</span><span class="o">[]</span> <span class="n">methods</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getMethods</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//get a specific method, if no parameters, just pass null</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">swimMethod</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">&quot;swim&quot;</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">shoutMethod</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">&quot;shout&quot;</span><span class="o">,</span> <span class="k">new</span> <span class="n">Class</span><span class="o">[]{</span><span class="kt">int</span><span class="o">.</span><span class="na">class</span><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Class</span><span class="o">[]</span> <span class="n">parameterTypes</span> <span class="o">=</span> <span class="n">shoutMethod</span><span class="o">.</span><span class="na">getParameterTypes</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">assertSame</span><span class="o">(</span><span class="n">parameterTypes</span><span class="o">[</span><span class="mi">0</span><span class="o">],</span> <span class="kt">int</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Class</span> <span class="n">returnType</span> <span class="o">=</span> <span class="n">shoutMethod</span><span class="o">.</span><span class="na">getReturnType</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">assertSame</span><span class="o">(</span><span class="n">returnType</span><span class="o">,</span> <span class="n">String</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">invoke_method_from_class</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Penguin</span> <span class="n">penguin</span> <span class="o">=</span> <span class="n">mock</span><span class="o">(</span><span class="n">Penguin</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">swimMethod</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">&quot;swim&quot;</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">shoutMethod</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">&quot;shout&quot;</span><span class="o">,</span> <span class="k">new</span> <span class="n">Class</span><span class="o">[]{</span><span class="kt">int</span><span class="o">.</span><span class="na">class</span><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">swimMethod</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">penguin</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">verify</span><span class="o">(</span><span class="n">penguin</span><span class="o">,</span> <span class="n">times</span><span class="o">(</span><span class="mi">1</span><span class="o">)).</span><span class="na">swim</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">shoutMethod</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">penguin</span><span class="o">,</span> <span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">verify</span><span class="o">(</span><span class="n">penguin</span><span class="o">,</span> <span class="n">times</span><span class="o">(</span><span class="mi">1</span><span class="o">)).</span><span class="na">shout</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<h3>getter &amp; setter</h3>
+
+<p>在初始化对象时，除了使用构造方法，可能还要使用getter和setter方法。但Java1.5没有提供直接取getter、setter的api，所以需要根据情况来自定。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">getter_and_setter</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="c1">//java doesn&#39;t have internal method to get getter and setter, so we need to use some custom</span>
+</span><span class='line'>    <span class="c1">//method to get the getter and setter</span>
+</span><span class='line'>    <span class="n">Method</span><span class="o">[]</span> <span class="n">methods</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getMethods</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span><span class="o">(</span><span class="n">Method</span> <span class="n">method</span> <span class="o">:</span> <span class="n">methods</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">isGetter</span><span class="o">(</span><span class="n">method</span><span class="o">))</span> <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;getter: &quot;</span> <span class="o">+</span> <span class="n">method</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">isSetter</span><span class="o">(</span><span class="n">method</span><span class="o">))</span> <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;setter: &quot;</span> <span class="o">+</span> <span class="n">method</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isGetter</span><span class="o">(</span><span class="n">Method</span> <span class="n">method</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(!</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&quot;get&quot;</span><span class="o">))</span> <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getParameterTypes</span><span class="o">().</span><span class="na">length</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="kt">void</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getReturnType</span><span class="o">()))</span> <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">isSetter</span><span class="o">(</span><span class="n">Method</span> <span class="n">method</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(!</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&quot;set&quot;</span><span class="o">))</span> <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getParameterTypes</span><span class="o">().</span><span class="na">length</span> <span class="o">!=</span> <span class="mi">1</span><span class="o">)</span> <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<pre><code>下面附上这一节的代码供参考。依赖类库为Junit和Mockito。  
+</code></pre>
+
+<p><a href="/downloads/code/JavaReflection_1.zip">JavaReflection_1.zip download</a></p>
+
+		
+		
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-30T10:29:00+08:00" pubdate data-updated="true">Apr 30<span>th</span>, 2013</time></div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/java/'>Java</a>
+
+
+</div>
+	
+		<div class="comments"><a href="/blog/2013/04/30/java-reflection-tutorial-1//index.html#disqus_thread">Comments</a></div>
+	
+</div></article>
 
 
     <article class="post">

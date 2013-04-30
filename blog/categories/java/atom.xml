@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Java | 沉默的大多数]]></title>
+  <link href="http://xuwugui.github.io/blog/categories/java/atom.xml" rel="self"/>
+  <link href="http://xuwugui.github.io/"/>
+  <updated>2013-04-30T16:46:42+08:00</updated>
+  <id>http://xuwugui.github.io/</id>
+  <author>
+    <name><![CDATA[徐无鬼]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Java Reflection Tutorial (1)]]></title>
+    <link href="http://xuwugui.github.io/blog/2013/04/30/java-reflection-tutorial-1/"/>
+    <updated>2013-04-30T10:29:00+08:00</updated>
+    <id>http://xuwugui.github.io/blog/2013/04/30/java-reflection-tutorial-1</id>
+    <content type="html"><![CDATA[<p>我们都知道，语言有编译时(compile time)和运行时(runtime)这两个时态。Java本是编译控，对运行时的自己不甚了解。不过在1.5之后(现在都8.0了，真是日往昔峥嵘岁月…)，Java引入了反射的概念，使其可以在运行时看到自己的类啊、接口啊、属性啊、方法啊等等这一系列本来只有在编译时才能看到的伙计。虽然没有动态语言可以动态生成类那么灵活，但也极大了弥补了运行时无能的缺点。</p>
+
+<p>下面我们用一些Test Case来解释一下反射能够做些什么，熟悉下Java给我们提供的这些反射相关的接口。</p>
+
+<p>我们的示例为方便展示，采用的是JUnit的测试框架。关于JUnit可以参考<a href="https://github.com/junit-team/junit/wiki/Getting-started">Junit Tutorial</a>。还用到了辅助测试的类Mockito，关于Mockito可以参考 <a href="http://docs.mockito.googlecode.com/hg/latest/org/mockito/Mockito.html">How to Drink Mockito</a>。</p>
+
+<h1>1. 准备实验台</h1>
+
+<p>先抓几只我们做实验的小白鼠，也就是建几个用来测试反射的类。本期是动物园主题，就选企鹅吧。
+``` java Penguin.java
+public class Penguin extends Bird implements Swim {</p>
+
+<pre><code>public String name;
+private Color color;
+
+public Penguin() {
+    color = Color.BLACK;
+}
+
+public Penguin(String name) {
+    this.name = name;
+}
+public Penguin(Color color) {
+    this.color = color;
+}
+public Color getColor() {
+    return color;
+}
+public void setColor(Color color) {
+    this.color = color;
+}
+public String getName() {
+    return name;
+}
+public void setName(String name) {
+    this.name = name;
+}
+public void swim() {
+    System.out.println("I like swim!");
+}
+public String shout(int times) {
+    StringBuilder sb = new StringBuilder();
+    for(int i = 0;i&lt;times;i++){
+        sb.append("yell..");
+    }
+    return sb.toString();
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>很明显，企鹅是鸟，勉强给他两个属性，名字和颜色。为什么名字是个public的属性，一会解释。<br/>
+鸟是个种类的概念，不应该有实例，所以让它成个抽象类。让它实现个"喳喳叫"的接口，还没想到什么鸟不能叫(死鸟不算..)</p>
+
+<p><code>java Bird.java
+public abstract class Bird implements Shout {
+}
+</code>
+企鹅这种鸟比较牛叉，可以游泳，就让它实现个Swim的接口。
+``` java Swim.java
+public interface Swim {</p>
+
+<pre><code>void swim();
+</code></pre>
+
+<p>}
+<code>
+企鹅的颜色也有很多种(其实我就知道黑白相间的…)，我们选用一个Enum来表示。
+</code> java Color.java
+public enum Color {</p>
+
+<pre><code>RED,GREEN,BLACK,WHITE
+</code></pre>
+
+<p>}
+```
+好了，小白鼠都上实验板了，该动刀了(怎么好像有点血腥…)</p>
+
+<p>我们创建一个Zoo类，把企鹅"请"到Zoo里。
+``` java Zoo.java
+public class Zoo {</p>
+
+<pre><code>private Class penguinClass;
+private Class birdClass;
+
+@Before
+public void setUp() {
+    //编译期
+    penguinClass = Penguin.class;
+    birdClass = Bird.class;
+}
+</code></pre>
+
+<p>}
+```
+如果我们在编译前就知道类名是什么，那么就不用麻烦运行时(runtime)了，可以直接取到相应的类型。<br/>
+这位客官说了，要是编译器我们不知道呢？且看下面分解。</p>
+
+<h1>2. 实验</h1>
+
+<p>我们先看下怎么操作类里面的这各种的声明的属性。</p>
+
+<h3>获取类</h3>
+
+<p>刚说了编译时获取Class的方法，那运行时呢？在运行时可以根据类名来获取Class的实例。
+``` java</p>
+
+<pre><code>@Test
+public void how_to_get_class_and_className() throws ClassNotFoundException {
+    //runtime
+    String penguinClassName = "com.thoughtworks.wugui.Penguin";
+    Class clazz = Class.forName(penguinClassName);
+
+    assertSame(clazz, penguinClass);
+    assertThat(clazz.getSimpleName(), is("Penguin"));
+}
+</code></pre>
+
+<p><code>
+可以使用forName函数，注意要加上包名。  
+在得到类型后，就可以取得这种类型很多相关的信息，比如说修饰符、包、超类、继承的接口等等。
+</code></p>
+
+<pre><code>@Test
+public void how_to_get_modifiers() throws Exception {
+    int modifier = birdClass.getModifiers();
+    assertTrue(Modifier.isAbstract(modifier));
+    assertTrue(Modifier.isPublic(modifier));
+}
+
+@Test
+public void how_to_get_package() {
+    int modifier = birdClass.getModifiers();
+    assertThat(birdClass.getPackage().getName(), is("com.thoughtworks.wugui"));
+}
+
+@Test
+public void how_to_get_superclass() throws Exception {
+    assertSame(penguinClass.getSuperclass(), birdClass);
+}
+
+@Test
+public void how_to_get_interfaces() throws Exception {
+    Class[] interfaces = penguinClass.getInterfaces();
+
+    assertThat(interfaces.length, is(1));
+    assertSame(interfaces[0], Swim.class);
+    //Actually penguin implement two interfaces, swim and shout. So the getInterface method
+    //just return declared interfaces above the class
+}
+</code></pre>
+
+<p>```</p>
+
+<h3>构造函数</h3>
+
+<p>拿到<code>Penguin.class</code>这个类型后，我们当然想要构造一个它的实例来使用。如果仅仅使用默认构造函数，可以简单使用<code>Penguin.clsss.newInstance()</code>(如果没有默认构造函数会抛<code>InstantiationException</code>)。如果要使用自定的构造函数，以及获取构造函数中的参数类型，可以看下下面的例子。
+```</p>
+
+<pre><code>@Test
+public void how_to_get_constructors() throws Exception {
+    Constructor[] constructors = penguinClass.getConstructors();
+
+    assertThat(constructors.length, is(2));
+}
+
+@Test
+public void get_constructor_through_parameters() throws Exception {
+    Constructor constructor = penguinClass.getConstructor(new Class[]{Color.class});
+
+    assertThat(constructor, notNullValue());
+}
+
+@Test
+public void get_parameters_from_constructor() throws NoSuchMethodException {
+    Constructor constructor = penguinClass.getConstructor(new Class[]{Color.class});
+
+    Class[] parameterTypes = constructor.getParameterTypes();
+
+    assertSame(parameterTypes[0], Color.class);
+}
+
+@Test
+public void create_instance_using_constructor() throws Exception {
+    Constructor constructor = penguinClass.getConstructor(new Class[]{Color.class});
+
+    Penguin penguin = (Penguin) constructor.newInstance(Color.WHITE);
+
+    assertThat(penguin.getColor(), is(Color.WHITE));
+}
+</code></pre>
+
+<p>```</p>
+
+<h3>实例变量</h3>
+
+<p>看到Penguin的name是public的，可能大家都比较好奇。因为一般来说我们会使用访问器方法get、set来访问private的实例变量。但getField只能取到public的实例变量，所以用的会比较少。
+```</p>
+
+<pre><code>@Test
+public void how_to_get_fields_from_class() throws NoSuchFieldException {
+    Field[] fields = penguinClass.getFields();
+    assertThat(fields.length, is(1));
+
+    Field name = penguinClass.getField("name");
+    assertThat(name.getName(), is("name"));
+
+    assertSame(name.getType(), String.class);
+}
+
+@Test
+public void get_and_set_field_value() throws Exception {
+    Field name = penguinClass.getField("name");
+    Penguin penguin = new Penguin("emperor penguin");
+
+    assertThat((String) name.get(penguin), is("emperor penguin"));
+
+    name.set(penguin, "fairy penguin");
+    assertThat(penguin.getName(), is("fairy penguin"));
+}
+</code></pre>
+
+<p>```</p>
+
+<h3>方法</h3>
+
+<p>当然还有最重要的方法。方法的获取比较像构造函数，可以使用方法名和参数类型表来获取。方法的调用则是制定所要调用方法的对象和参数列表即可。
+```</p>
+
+<pre><code>@Test
+public void get_and_methods_from_class() throws NoSuchMethodException {
+    //The Method[] array will have one Method instance for each public method declared in the class.
+    Method[] methods = penguinClass.getMethods();
+
+    //get a specific method, if no parameters, just pass null
+    Method swimMethod = penguinClass.getMethod("swim", null);
+    Method shoutMethod = penguinClass.getMethod("shout", new Class[]{int.class});
+
+    Class[] parameterTypes = shoutMethod.getParameterTypes();
+    assertSame(parameterTypes[0], int.class);
+
+    Class returnType = shoutMethod.getReturnType();
+    assertSame(returnType, String.class);
+
+}
+
+@Test
+public void invoke_method_from_class() throws Exception {
+    Penguin penguin = mock(Penguin.class);
+
+    Method swimMethod = penguinClass.getMethod("swim", null);
+    Method shoutMethod = penguinClass.getMethod("shout", new Class[]{int.class});
+
+    swimMethod.invoke(penguin, null);
+    verify(penguin, times(1)).swim();
+
+    shoutMethod.invoke(penguin, 2);
+    verify(penguin, times(1)).shout(2);
+}
+</code></pre>
+
+<p>```</p>
+
+<h3>getter &amp; setter</h3>
+
+<p>在初始化对象时，除了使用构造方法，可能还要使用getter和setter方法。但Java1.5没有提供直接取getter、setter的api，所以需要根据情况来自定。
+```</p>
+
+<pre><code>@Test
+public void getter_and_setter() {
+    //java doesn't have internal method to get getter and setter, so we need to use some custom
+    //method to get the getter and setter
+    Method[] methods = penguinClass.getMethods();
+
+    for(Method method : methods){
+        if(isGetter(method)) System.out.println("getter: " + method);
+        if(isSetter(method)) System.out.println("setter: " + method);
+    }
+}
+
+private boolean isGetter(Method method) {
+    if (!method.getName().startsWith("get")) return false;
+    if (method.getParameterTypes().length != 0) return false;
+    if (void.class.equals(method.getReturnType())) return false;
+    return true;
+}
+
+public boolean isSetter(Method method) {
+    if (!method.getName().startsWith("set")) return false;
+    if (method.getParameterTypes().length != 1) return false;
+    return true;
+}
+</code></pre>
+
+<p>```</p>
+
+<pre><code>下面附上这一节的代码供参考。依赖类库为Junit和Mockito。  
+</code></pre>
+
+<p><a href="/downloads/code/JavaReflection_1.zip">JavaReflection_1.zip download</a></p>
+]]></content>
+  </entry>
+  
+</feed>
