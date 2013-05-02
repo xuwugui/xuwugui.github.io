@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | 沉默的大多数]]></title>
   <link href="http://xuwugui.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://xuwugui.github.io/"/>
-  <updated>2013-05-02T22:50:10+08:00</updated>
+  <updated>2013-05-02T23:05:26+08:00</updated>
   <id>http://xuwugui.github.io/</id>
   <author>
     <name><![CDATA[徐无鬼]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Java Reflection Tutorial]]></title>
+    <title type="html"><![CDATA[Java 反射入门]]></title>
     <link href="http://xuwugui.github.io/blog/2013/04/30/java-reflection-tutorial/"/>
     <updated>2013-04-30T10:29:00+08:00</updated>
     <id>http://xuwugui.github.io/blog/2013/04/30/java-reflection-tutorial</id>
@@ -64,6 +64,10 @@ public String shout(int times) {
         sb.append("yell..");
     }
     return sb.toString();
+}
+
+private String wantSay(){
+    return "Hello World";
 }
 </code></pre>
 
@@ -182,7 +186,7 @@ public void how_to_get_interfaces() throws Exception {
 public void how_to_get_constructors() throws Exception {
     Constructor[] constructors = penguinClass.getConstructors();
 
-    assertThat(constructors.length, is(2));
+    assertThat(constructors.length, is(3));
 }
 
 @Test
@@ -315,10 +319,43 @@ public boolean isSetter(Method method) {
 
 <p>```</p>
 
+<h3>私有实例变量和方法</h3>
+
+<p>上面说了如何获取public的实例变量和实例方法，也就是对class使用getField和getMethod方法，在平时使用时，更多的要获取的是对象的私有变量和方法，下面的例子就是使用getDeclaredXXX来获取class内部全部field和method的方法。
+```</p>
+
+<pre><code>@Test
+public void how_to_access_private_field() throws NoSuchFieldException, IllegalAccessException {
+    Penguin penguin = new Penguin(Color.RED);
+    Field colorField = penguinClass.getDeclaredField("color");
+    colorField.setAccessible(true);
+    Color color = (Color) colorField.get(penguin);
+
+    assertThat(color, is(Color.RED));
+}
+
+@Test
+public void how_to_access_private_method() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Penguin penguin = new Penguin();
+    Method method = penguinClass.getDeclaredMethod("wantSay", null);
+
+    method.setAccessible(true);
+    String whatToSay = (String) method.invoke(penguin, null);
+
+    assertThat(whatToSay, is("Hello World"));
+}
+</code></pre>
+
+<p>···</p>
+
+<p>好了，反射常用的方法就说到这。反射还有很多类似的功能，只要是运行时想要获取代码中任何声明信息的，你都可以想到反射来用他，比如Annotation，泛型中各种声明的类型，运行时动态的生成泛型数组等等。本文参考的文章中有很详细的介绍，这就不多赘述了。</p>
+
 <pre><code>下面附上这一节的代码供参考。依赖类库为Junit和Mockito。  
 </code></pre>
 
-<p><a href="/downloads/code/JavaReflection_1.zip">JavaReflection_1.zip download</a></p>
+<p><a href="/downloads/code/JavaReflection.zip">JavaReflection.zip download</a></p>
+
+<p>Reference Article: <a href="http://tutorials.jenkov.com/java-reflection/index.html">Java Reflection Tutorial</a></p>
 ]]></content>
   </entry>
   

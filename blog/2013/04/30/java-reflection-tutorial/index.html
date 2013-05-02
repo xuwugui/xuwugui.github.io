@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8">
   <meta name="google-site-verification" content="4M2NfXEDeQI_MQnkbtkKkuhPehW0XDGBf4_czOL1l0A" />
-	<title>Java Reflection Tutorial - 沉默的大多数</title>
+	<title>Java 反射入门 - 沉默的大多数</title>
 	<meta name="author" content="徐无鬼">
 
 	
@@ -73,7 +73,7 @@
 		
 	
 	<div id="content" class="inner"><article class="post">
-	<h2 class="title">Java Reflection Tutorial</h2>
+	<h2 class="title">Java 反射入门</h2>
 	<div class="entry-content"><p>我们都知道，语言有编译时(compile time)和运行时(runtime)这两个时态。Java本是编译控，对运行时的自己不甚了解。不过在1.5之后(现在都8.0了，真是日往昔峥嵘岁月…)，Java引入了反射的概念，使其可以在运行时看到自己的类啊、接口啊、属性啊、方法啊等等这一系列本来只有在编译时才能看到的伙计。虽然没有动态语言可以动态生成类那么灵活，但也极大了弥补了运行时无能的缺点。</p>
 
 <p>下面我们用一些Test Case来解释一下反射能够做些什么，熟悉下Java给我们提供的这些反射相关的接口。</p>
@@ -121,6 +121,10 @@
 <span class='line-number'>35</span>
 <span class='line-number'>36</span>
 <span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
 </pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Penguin</span> <span class="kd">extends</span> <span class="n">Bird</span> <span class="kd">implements</span> <span class="n">Swim</span> <span class="o">{</span>
 </span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
 </span><span class='line'>    <span class="kd">private</span> <span class="n">Color</span> <span class="n">color</span><span class="o">;</span>
@@ -156,6 +160,10 @@
 </span><span class='line'>            <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="s">&quot;yell..&quot;</span><span class="o">);</span>
 </span><span class='line'>        <span class="o">}</span>
 </span><span class='line'>        <span class="k">return</span> <span class="n">sb</span><span class="o">.</span><span class="na">toString</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="nf">wantSay</span><span class="o">(){</span>
+</span><span class='line'>        <span class="k">return</span> <span class="s">&quot;Hello World&quot;</span><span class="o">;</span>
 </span><span class='line'>    <span class="o">}</span>
 </span><span class='line'><span class="o">}</span>
 </span></code></pre></td></tr></table></div></figure>
@@ -355,7 +363,7 @@
 </span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_get_constructors</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
 </span><span class='line'>    <span class="n">Constructor</span><span class="o">[]</span> <span class="n">constructors</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getConstructors</span><span class="o">();</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">constructors</span><span class="o">.</span><span class="na">length</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="mi">2</span><span class="o">));</span>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">constructors</span><span class="o">.</span><span class="na">length</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="mi">3</span><span class="o">));</span>
 </span><span class='line'><span class="o">}</span>
 </span><span class='line'>
 </span><span class='line'><span class="nd">@Test</span>
@@ -560,10 +568,43 @@
 
 <p></p>
 
+<h3>私有实例变量和方法</h3>
+
+<p>上面说了如何获取public的实例变量和实例方法，也就是对class使用getField和getMethod方法，在平时使用时，更多的要获取的是对象的私有变量和方法，下面的例子就是使用getDeclaredXXX来获取class内部全部field和method的方法。
+&#8220;`</p>
+
+<pre><code>@Test
+public void how_to_access_private_field() throws NoSuchFieldException, IllegalAccessException {
+    Penguin penguin = new Penguin(Color.RED);
+    Field colorField = penguinClass.getDeclaredField("color");
+    colorField.setAccessible(true);
+    Color color = (Color) colorField.get(penguin);
+
+    assertThat(color, is(Color.RED));
+}
+
+@Test
+public void how_to_access_private_method() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Penguin penguin = new Penguin();
+    Method method = penguinClass.getDeclaredMethod("wantSay", null);
+
+    method.setAccessible(true);
+    String whatToSay = (String) method.invoke(penguin, null);
+
+    assertThat(whatToSay, is("Hello World"));
+}
+</code></pre>
+
+<p>···</p>
+
+<p>好了，反射常用的方法就说到这。反射还有很多类似的功能，只要是运行时想要获取代码中任何声明信息的，你都可以想到反射来用他，比如Annotation，泛型中各种声明的类型，运行时动态的生成泛型数组等等。本文参考的文章中有很详细的介绍，这就不多赘述了。</p>
+
 <pre><code>下面附上这一节的代码供参考。依赖类库为Junit和Mockito。  
 </code></pre>
 
-<p><a href="/downloads/code/JavaReflection_1.zip">JavaReflection_1.zip download</a></p>
+<p><a href="/downloads/code/JavaReflection.zip">JavaReflection.zip download</a></p>
+
+<p>Reference Article: <a href="http://tutorials.jenkov.com/java-reflection/index.html">Java Reflection Tutorial</a></p>
 </div>
 
 
