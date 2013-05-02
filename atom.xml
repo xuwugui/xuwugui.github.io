@@ -4,7 +4,7 @@
   <title><![CDATA[沉默的大多数]]></title>
   <link href="http://xuwugui.github.io/atom.xml" rel="self"/>
   <link href="http://xuwugui.github.io/"/>
-  <updated>2013-04-30T16:46:42+08:00</updated>
+  <updated>2013-05-02T22:50:10+08:00</updated>
   <id>http://xuwugui.github.io/</id>
   <author>
     <name><![CDATA[徐无鬼]]></name>
@@ -14,10 +14,10 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Java Reflection Tutorial (1)]]></title>
-    <link href="http://xuwugui.github.io/blog/2013/04/30/java-reflection-tutorial-1/"/>
+    <title type="html"><![CDATA[Java Reflection Tutorial]]></title>
+    <link href="http://xuwugui.github.io/blog/2013/04/30/java-reflection-tutorial/"/>
     <updated>2013-04-30T10:29:00+08:00</updated>
-    <id>http://xuwugui.github.io/blog/2013/04/30/java-reflection-tutorial-1</id>
+    <id>http://xuwugui.github.io/blog/2013/04/30/java-reflection-tutorial</id>
     <content type="html"><![CDATA[<p>我们都知道，语言有编译时(compile time)和运行时(runtime)这两个时态。Java本是编译控，对运行时的自己不甚了解。不过在1.5之后(现在都8.0了，真是日往昔峥嵘岁月…)，Java引入了反射的概念，使其可以在运行时看到自己的类啊、接口啊、属性啊、方法啊等等这一系列本来只有在编译时才能看到的伙计。虽然没有动态语言可以动态生成类那么灵活，但也极大了弥补了运行时无能的缺点。</p>
 
 <p>下面我们用一些Test Case来解释一下反射能够做些什么，熟悉下Java给我们提供的这些反射相关的接口。</p>
