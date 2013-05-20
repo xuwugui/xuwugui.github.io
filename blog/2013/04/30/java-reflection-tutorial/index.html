@@ -570,32 +570,50 @@
 
 <h3>私有实例变量和方法</h3>
 
-<p>上面说了如何获取public的实例变量和实例方法，也就是对class使用getField和getMethod方法，在平时使用时，更多的要获取的是对象的私有变量和方法，下面的例子就是使用getDeclaredXXX来获取class内部全部field和method的方法。
-&#8220;`</p>
+<p>上面说了如何获取public的实例变量和实例方法，也就是对class使用getField和getMethod方法，在平时使用时，更多的要获取的是对象的私有变量和方法，下面的例子就是使用getDeclaredXXX来获取class内部全部field和method的方法。</p>
 
-<pre><code>@Test
-public void how_to_access_private_field() throws NoSuchFieldException, IllegalAccessException {
-    Penguin penguin = new Penguin(Color.RED);
-    Field colorField = penguinClass.getDeclaredField("color");
-    colorField.setAccessible(true);
-    Color color = (Color) colorField.get(penguin);
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_access_private_field</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">NoSuchFieldException</span><span class="o">,</span> <span class="n">IllegalAccessException</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Penguin</span> <span class="n">penguin</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Penguin</span><span class="o">(</span><span class="n">Color</span><span class="o">.</span><span class="na">RED</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">Field</span> <span class="n">colorField</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">&quot;color&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">colorField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">Color</span> <span class="n">color</span> <span class="o">=</span> <span class="o">(</span><span class="n">Color</span><span class="o">)</span> <span class="n">colorField</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">penguin</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">color</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="n">Color</span><span class="o">.</span><span class="na">RED</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_access_private_method</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">NoSuchMethodException</span><span class="o">,</span> <span class="n">InvocationTargetException</span><span class="o">,</span> <span class="n">IllegalAccessException</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Penguin</span> <span class="n">penguin</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Penguin</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">method</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getDeclaredMethod</span><span class="o">(</span><span class="s">&quot;wantSay&quot;</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">method</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">whatToSay</span> <span class="o">=</span> <span class="o">(</span><span class="n">String</span><span class="o">)</span> <span class="n">method</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">penguin</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">whatToSay</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="s">&quot;Hello World&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
-    assertThat(color, is(Color.RED));
-}
-
-@Test
-public void how_to_access_private_method() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    Penguin penguin = new Penguin();
-    Method method = penguinClass.getDeclaredMethod("wantSay", null);
-
-    method.setAccessible(true);
-    String whatToSay = (String) method.invoke(penguin, null);
-
-    assertThat(whatToSay, is("Hello World"));
-}
-</code></pre>
-
-<p>···</p>
 
 <p>好了，反射常用的方法就说到这。反射还有很多类似的功能，只要是运行时想要获取代码中任何声明信息的，你都可以想到反射来用他，比如Annotation，泛型中各种声明的类型，运行时动态的生成泛型数组等等。本文参考的文章中有很详细的介绍，这就不多赘述了。</p>
 

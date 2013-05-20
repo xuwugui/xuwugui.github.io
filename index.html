@@ -8,7 +8,8 @@
 	<meta name="author" content="徐无鬼">
 
 	
-	<meta name="description" content="我们都知道，语言有编译时(compile time)和运行时(runtime)这两个时态。Java本是编译控，对运行时的自己不甚了解。不过在1.5之后(现在都8.0了，真是日往昔峥嵘岁月…)，Java引入了反射的概念，使其可以在运行时看到自己的类啊、接口啊、属性啊、 &hellip;">
+	<meta name="description" content="看了IGN关于why we love superheroes的一篇文章和discovery的一个视频，简略纪录下一些人对于“超级英雄热”的一些看法。 超级英雄的故事就是一个个现代神话，它们描绘了未来人们将会成为什么样子。
+是关于我们本身的，他们是我们想要变成的人， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -73,6 +74,61 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/2013/05/20/why-people-love-superheroes-so-much/">
+		
+			Why People Love Superheroes So Much</a>
+	</h2>
+	<div class="entry-content">
+		<p>看了IGN关于<a href="http://www.ign.com/articles/2011/12/27/why-we-love-superheroes">why we love superheroes</a>的一篇文章和discovery的一个<a href="http://news.discovery.com/human/videos/human-superheroes-why-we-love-them.htm">视频</a>，简略纪录下一些人对于“超级英雄热”的一些看法。</p>
+
+<ul>
+<li>超级英雄的故事就是一个个现代神话，它们描绘了未来人们将会成为什么样子。</li>
+<li>是关于我们本身的，他们是我们想要变成的人，不仅仅是一群戴着面罩打击犯罪的家伙，还包括他们肉体上的超能力和精神上的正能量。</li>
+<li>超级英雄的故事往往是在身边（当然是老外的身边）发生的，但是那个拥有超级英雄的世界却又有很多的不同，更加神秘更加刺激，比如我们平时居住的地方下面又是另外一个世界（其实我们大家都知道只是下水道、化粪池之类的），算是对周围平凡世界不满的一种补偿。在我们真实的世界之上构造一个奇妙的元素，让观者有身临其境的错觉。</li>
+<li>与超级英雄一同面对困境，受他们精神和行动的鼓舞。简单来说就是人民的楷模（不觉想到雷叔…）</li>
+<li>对自己处境的不满，对自我的不满。想要逃避。</li>
+<li>用超级英雄反观人类本身。每个超级英雄都是用以解决特定问题的，</li>
+<li>人们不可能真正成为超级英雄，所以通过电影、游戏、漫画等抒发自身想要成为超级英雄那样的渴望。</li>
+</ul>
+
+
+<p>PS：“我相信，如果人们没有意识到每个人都可以让世界做一些改变的时候，人类所面对的这些问题就不会被解决。”Tangen说道。</p>
+
+		
+		
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-20T22:01:00+08:00" pubdate data-updated="true">May 20<span>th</span>, 2013</time></div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/lao-zhang-de-shi-mo-ge-wei-shi-yao/'>老张的十万个为什么</a>
+
+
+</div>
+	
+		<div class="comments"><a href="/blog/2013/05/20/why-people-love-superheroes-so-much//index.html#disqus_thread">Comments</a></div>
+	
+</div></article>
 
 
     <article class="post">
@@ -579,32 +635,50 @@
 
 <h3>私有实例变量和方法</h3>
 
-<p>上面说了如何获取public的实例变量和实例方法，也就是对class使用getField和getMethod方法，在平时使用时，更多的要获取的是对象的私有变量和方法，下面的例子就是使用getDeclaredXXX来获取class内部全部field和method的方法。
-&#8220;`</p>
+<p>上面说了如何获取public的实例变量和实例方法，也就是对class使用getField和getMethod方法，在平时使用时，更多的要获取的是对象的私有变量和方法，下面的例子就是使用getDeclaredXXX来获取class内部全部field和method的方法。</p>
 
-<pre><code>@Test
-public void how_to_access_private_field() throws NoSuchFieldException, IllegalAccessException {
-    Penguin penguin = new Penguin(Color.RED);
-    Field colorField = penguinClass.getDeclaredField("color");
-    colorField.setAccessible(true);
-    Color color = (Color) colorField.get(penguin);
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_access_private_field</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">NoSuchFieldException</span><span class="o">,</span> <span class="n">IllegalAccessException</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Penguin</span> <span class="n">penguin</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Penguin</span><span class="o">(</span><span class="n">Color</span><span class="o">.</span><span class="na">RED</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">Field</span> <span class="n">colorField</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">&quot;color&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">colorField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">Color</span> <span class="n">color</span> <span class="o">=</span> <span class="o">(</span><span class="n">Color</span><span class="o">)</span> <span class="n">colorField</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">penguin</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">color</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="n">Color</span><span class="o">.</span><span class="na">RED</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Test</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">how_to_access_private_method</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">NoSuchMethodException</span><span class="o">,</span> <span class="n">InvocationTargetException</span><span class="o">,</span> <span class="n">IllegalAccessException</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Penguin</span> <span class="n">penguin</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Penguin</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">method</span> <span class="o">=</span> <span class="n">penguinClass</span><span class="o">.</span><span class="na">getDeclaredMethod</span><span class="o">(</span><span class="s">&quot;wantSay&quot;</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">method</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">whatToSay</span> <span class="o">=</span> <span class="o">(</span><span class="n">String</span><span class="o">)</span> <span class="n">method</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">penguin</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">assertThat</span><span class="o">(</span><span class="n">whatToSay</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="s">&quot;Hello World&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
-    assertThat(color, is(Color.RED));
-}
-
-@Test
-public void how_to_access_private_method() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    Penguin penguin = new Penguin();
-    Method method = penguinClass.getDeclaredMethod("wantSay", null);
-
-    method.setAccessible(true);
-    String whatToSay = (String) method.invoke(penguin, null);
-
-    assertThat(whatToSay, is("Hello World"));
-}
-</code></pre>
-
-<p>···</p>
 
 <p>好了，反射常用的方法就说到这。反射还有很多类似的功能，只要是运行时想要获取代码中任何声明信息的，你都可以想到反射来用他，比如Annotation，泛型中各种声明的类型，运行时动态的生成泛型数组等等。本文参考的文章中有很详细的介绍，这就不多赘述了。</p>
 

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | 沉默的大多数]]></title>
   <link href="http://xuwugui.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://xuwugui.github.io/"/>
-  <updated>2013-05-02T23:05:26+08:00</updated>
+  <updated>2013-05-20T22:09:22+08:00</updated>
   <id>http://xuwugui.github.io/</id>
   <author>
     <name><![CDATA[徐无鬼]]></name>
@@ -346,7 +346,7 @@ public void how_to_access_private_method() throws NoSuchMethodException, Invocat
 }
 </code></pre>
 
-<p>···</p>
+<p>```</p>
 
 <p>好了，反射常用的方法就说到这。反射还有很多类似的功能，只要是运行时想要获取代码中任何声明信息的，你都可以想到反射来用他，比如Annotation，泛型中各种声明的类型，运行时动态的生成泛型数组等等。本文参考的文章中有很详细的介绍，这就不多赘述了。</p>
 
