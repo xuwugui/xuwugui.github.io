@@ -8,7 +8,7 @@
 	<meta name="author" content="徐无鬼">
 
 	
-	<meta name="description" content="静谧的时光隧道里沉睡着一个人，一身灰白的衣褂，头上扎着一根锻蓝色的头巾，晶莹的白色胡子蜿蜒在身体的周围，一丛一丛的，好似一个天然的羽绒抱枕一般。他睡的很熟，匆匆划过的时间一点也没打扰到他，周围流动的一切仿佛都与他无关。他就这样沉睡着，一晃就是500年。他就是彭祖。 他当过官，但他很清楚， &hellip;">
+	<meta name="description" content="Mock Current Time 在项目中，有时会使用到系统当前时间，时间的精度往往为millisecond。由于系统代码执行的延时，在单元测试中的执行时间和源码中的执行时间往往是不同的。因此有如下解决方案: 降低精度，即将时间的精度降为second级，掩盖系统延时。这种方法简单易行， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -73,6 +73,208 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/2013/06/21/2-mockito-tips/">
+		
+			2 Mockito Tips</a>
+	</h2>
+	<div class="entry-content">
+		<h2>Mock Current Time</h2>
+
+<p>在项目中，有时会使用到系统当前时间，时间的精度往往为millisecond。由于系统代码执行的延时，在单元测试中的执行时间和源码中的执行时间往往是不同的。因此有如下解决方案:</p>
+
+<ol>
+<li>降低精度，即将时间的精度降为second级，掩盖系统延时。这种方法简单易行，但在某些情况下会出错，如:
+
+<ul>
+<li>系统延时较大，超过second级别。</li>
+<li>当前时间为时间交界点。如在项目代码中执行的时间为10:59:59:999，而在测试中执行的时间为11:00:00:100。</li>
+</ul>
+</li>
+<li>使用verify的形式来验证项目代码中设置当前时间的方法(如System.currentTimeMillis)被执行。此函数为static函数，并且声明包含final，故不可用powerMock。还好jodaTime对此类测试有支持(或许这正是其将now()定为final的原因），可以使用FakeObject的方法。示例如下:
+使用<code>System.currentTimeMillis()</code>来取当前时间的地方替换为<code>DateTimeUtils.currentTimeMillis()</code></li>
+</ol>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kt">long</span> <span class="n">now</span> <span class="o">=</span> <span class="k">new</span> <span class="n">DateTime</span><span class="o">(</span><span class="mi">1970</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">1</span><span class="o">).</span><span class="na">getMillis</span><span class="o">();</span><span class="c1">//create dateTime object</span>
+</span><span class='line'><span class="n">DateTimeUtils</span><span class="o">.</span><span class="na">setCurrentMillisFixed</span><span class="o">(</span><span class="n">now</span><span class="o">);</span><span class="c1">//Fake now()</span>
+</span><span class='line'><span class="n">assertThat</span><span class="o">(</span><span class="n">expectCurrentTime</span><span class="o">,</span> <span class="n">is</span><span class="o">(</span><span class="n">now</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>此法使用的是FakeObject的方法，将now()对象的返回值fake为一个预设的对象。
+此时的影响是全局的，故而要在结束时将其恢复为正常的系统时间。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">DateTimeUtils</span><span class="o">.</span><span class="na">setCurrentMillisSystem</span><span class="o">();</span><span class="c1">//reset now()</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Object Matcher</h2>
+
+<p>单元测试中对象的比较。有时我们需要在单元测试中比较两个对象的field而不是地址，
+但在产品代码中没有equals方法，然而我们不应该仅仅因为测试需要而增加产品代码，
+这种麻烦的情况就需要mockito的帮助了。
+例如我们有一个类:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Foo</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">Foo</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getName</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们想要做如下测试:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FooTest</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nd">@Test</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">should_compare_foo</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Foo</span> <span class="n">foo</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Foo</span><span class="o">(</span><span class="s">&quot;foo&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">assertThat</span><span class="o">(</span><span class="n">foo</span><span class="o">,</span><span class="n">is</span><span class="o">(</span><span class="k">new</span> <span class="n">Foo</span><span class="o">(</span><span class="s">&quot;foo&quot;</span><span class="o">));</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们仅想要比较对象的某些field是否相同，此例为name，但Foo并没有equals方法。Foo至今貌似也不需要equals方法。
+我们可以发现assertThat的第二个参数是Matcher类型，或许我们可以extend自己的matcher方法。这里引入ArgumentMatcher<T>，
+顾名思义，参数匹配器。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FooMatcher</span> <span class="kd">extends</span> <span class="n">ArgumentMatcher</span><span class="o">&lt;</span><span class="n">Foo</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Foo</span> <span class="n">actualFoo</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">FooMatcher</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">matches</span><span class="o">(</span><span class="n">Object</span> <span class="n">object</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">actualFoo</span> <span class="o">=</span> <span class="o">(</span><span class="n">Foo</span><span class="o">)</span> <span class="n">object</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">name</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">actualFoo</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">describeTo</span><span class="o">(</span><span class="n">Description</span> <span class="n">description</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">message</span> <span class="o">=</span> <span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span>
+</span><span class='line'>                <span class="s">&quot;Expected an foo like [name: %s]\n&quot;</span> <span class="o">+</span>
+</span><span class='line'>                        <span class="s">&quot;\tbut got an foo like [name: %s]&quot;</span><span class="o">,</span>
+</span><span class='line'>                <span class="n">name</span><span class="o">,</span> <span class="n">actualFoo</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">description</span><span class="o">.</span><span class="na">appendText</span><span class="o">(</span><span class="n">message</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">FooMatcher</span> <span class="nf">IsAFooWith</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="nf">FooMatcher</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>重写了其matches方法，用此来比较两个对象是否相同。
+重写的describeTo方法，为了使测试时的出错信息更直观(Good practice)。
+此时，我们便可以写如下的测试:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FooTest</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nd">@Test</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">should_compare_foo</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Foo</span> <span class="n">foo</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Foo</span><span class="o">(</span><span class="s">&quot;foo&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">assertThat</span><span class="o">(</span><span class="n">foo</span><span class="o">,</span><span class="n">FooMatcher</span><span class="o">.</span><span class="na">IsAFooWith</span><span class="o">(</span><span class="s">&quot;foo&quot;</span><span class="o">));</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其实，有时我们连get方法都不想要，那是就要用到mockito的反射测试法，有时间继续介绍。
+Have Fun.</p>
+
+		
+		
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-21T10:43:00+08:00" pubdate data-updated="true">Jun 21<span>st</span>, 2013</time></div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/test/'>Test</a>
+
+
+</div>
+	
+		<div class="comments"><a href="/blog/2013/06/21/2-mockito-tips//index.html#disqus_thread">Comments</a></div>
+	
+</div></article>
 
 
     <article class="post">
