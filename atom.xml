@@ -4,7 +4,7 @@
   <title><![CDATA[沉默的大多数]]></title>
   <link href="http://xuwugui.github.io/atom.xml" rel="self"/>
   <link href="http://xuwugui.github.io/"/>
-  <updated>2013-06-21T12:42:55+08:00</updated>
+  <updated>2013-06-24T09:27:09+08:00</updated>
   <id>http://xuwugui.github.io/</id>
   <author>
     <name><![CDATA[徐无鬼]]></name>
@@ -14,10 +14,10 @@
 
   
   <entry>
-    <title type="html"><![CDATA[2 Mockito Tips]]></title>
-    <link href="http://xuwugui.github.io/blog/2013/06/21/2-mockito-tips/"/>
+    <title type="html"><![CDATA[2 Test Tips]]></title>
+    <link href="http://xuwugui.github.io/blog/2013/06/21/2-test-tips/"/>
     <updated>2013-06-21T10:43:00+08:00</updated>
-    <id>http://xuwugui.github.io/blog/2013/06/21/2-mockito-tips</id>
+    <id>http://xuwugui.github.io/blog/2013/06/21/2-test-tips</id>
     <content type="html"><![CDATA[<h2>Mock Current Time</h2>
 
 <p>在项目中，有时会使用到系统当前时间，时间的精度往往为millisecond。由于系统代码执行的延时，在单元测试中的执行时间和源码中的执行时间往往是不同的。因此有如下解决方案:</p>
@@ -56,7 +56,7 @@
 
 <p>单元测试中对象的比较。有时我们需要在单元测试中比较两个对象的field而不是地址，
 但在产品代码中没有equals方法，然而我们不应该仅仅因为测试需要而增加产品代码，
-这种麻烦的情况就需要mockito的帮助了。
+这种麻烦的情况就需要hamcrest中matcher的帮助了。
 例如我们有一个类:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -177,8 +177,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>其实，有时我们连get方法都不想要，那是就要用到mockito的反射测试法，有时间继续介绍。
-Have Fun.</p>
+<p>Have Fun.</p>
 ]]></content>
   </entry>
   
